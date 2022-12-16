@@ -1,7 +1,7 @@
 from bson.objectid import ObjectId
 from pydantic import BaseModel, EmailStr, Field
 from models.common import CreatedAtModel, UpdatedAtModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 
 from utils.userpass import verify_password
@@ -11,6 +11,7 @@ from db.mongoIdobject import PyObjectId
 class UserBase(BaseModel):
     username : str
     email : Optional[EmailStr] = None
+    basket: List[Dict] = [{}]
 
 
 class User(BaseModel):

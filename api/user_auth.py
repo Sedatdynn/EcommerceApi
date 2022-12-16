@@ -10,6 +10,9 @@ from utils.tokens import create_access_token
 from crud.user import create_user, get_user
 from models.user import User, UserBase, UserInCreate, UserInRequest, UserInResponse
 from models.token import TokenResponse
+from models.products import ListProduct, BasketInRequest
+from fastapi_pagination import Page
+from crud.products import get_basket_product
 
 router = APIRouter()
 
@@ -38,3 +41,24 @@ async def login(data: UserInRequest = Body(...), db: AsyncIOMotorClient = Depend
 async def retrieve_user(db: AsyncIOMotorClient = Depends(get_database),current_username: User = Depends(JwtBearer())):
     current_user =  await get_user(db, value=current_username) 
     return JSONResponse(status_code=HTTP_200_OK, content=jsonable_encoder(current_user))
+
+@router.get("/user/basket/", tags=["Basket"], name="Get user basket", response_model=Page[ListProduct])
+async def get_basket(db: AsyncIOMotorClient = Depends(get_database), current_user: User = Depends(JwtBearer())):
+    current_user = await get_user(db, value=current_user)
+    print(current_user.basket)
+    data = await get_basket_product(db, current_user.basket)
+    data = ListProduct(**data)
+
+    return JSONResponse(status_code=HTTP_200_OK, content=jsonable_encoder(data))
+
+@router.post("/user/basket/add/", tags=["Basket"], name="Put new product to basket")
+async def put_basket(db: AsyncIOMotorClient = Depends(get_database), current_user: User = Depends(JwtBearer()), product_id: BasketInRequest = None): 
+    await db["ecommerce_dev"]["users"].update_one({"username": current_user}, { "$push": {"basket": {"p_id": product_id.product_id} } })
+    return JSONResponse(status_code=HTTP_200_OK, content={"msg" : "Success!"})
+
+@router.delete("/user/basket/delete/", tags=["Basket"], name="Delete product from basket")
+async def delete_product_from_basket(db: AsyncIOMotorClient = Depends(get_database), current_user: User = Depends(JwtBearer()), p_id: BasketInRequest = None):
+    await db["ecommerce_dev"]["users"].update_one({"username": current_user}, {"$pull" : {"basket" : {"p_id" : p_id.product_id}}} )
+    return JSONResponse(status_code=HTTP_200_OK, content={"msg" : "Success!"})
+
+

@@ -7,3 +7,15 @@ async def get_products( conn: AsyncIOMotorClient):
         return { "products" : products }
 
     return False
+
+async def get_basket_product(conn: AsyncIOMotorClient, lst):
+    a = []
+    for i in lst:
+        a.append(i["p_id"])
+        
+    data = await conn["ecommerce_dev"]["products"].find({ "id": {"$in" : a } }).to_list(length=100)
+
+    if data:
+        return { "products" : data}
+    
+    return False
